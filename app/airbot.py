@@ -28,8 +28,13 @@ import os
 import time
 import __future__
 import logging
+import ssl
 import tweepy
+import utm
+from bs4 import BeautifulSoup
+from urllib import urlopen
 from ConfigParser import SafeConfigParser
+from geopy.geocoders import Nominatim
 from tweepy import Stream
 from tweepy import OAuthHandler
 from tweepy.streaming import StreamListener
@@ -45,6 +50,7 @@ def auth():
 	csecret = parser.get('twitter','csecret')
 	atoken = parser.get('twitter','atoken')
 	asecret = parser.get('twitter', 'asecret')
+	akey = parser.get('breezometer', 'akey')
 
 	# Create authentication token using our details
 	auth = tweepy.OAuthHandler(ckey, csecret)
@@ -54,17 +60,24 @@ def auth():
 	twitterStream.filter(track=["#airqualityin"]) 
 
 
+
 class streamer(StreamListener):
 	def on_data(self, data):
 		try:
 			userName = data.split(',"screen_name":"')[1].split('","location')[0]
 			tweet = data.split(',"text":"')[1].split('","source')[0]
-			print tweet[tweet.index("#airqualityin")+1:]
+			city = tweet[tweet.index("#airqualityin")+(len("#airqualityin")+1):]
+			print tweet
+			print city
+			latitude, longitude = self.get_latlon(city)
+			print latitude
+			print longitude
+			self.get_aqi(latitude, longitude)
+			# 1) get lattitude and longitude from the city
+			# 2) pass the lattitude and longitude to get_aqi
 
-			#print data
-
-			fetchedTweet = "@"+userName+"-"+tweet
-			#print fetchedTweet
+			#fetchedTweet = "@"+userName+"-"+tweet
+			#call parse_aqi here
 			time.sleep(5)
 			return True
 
@@ -83,7 +96,22 @@ class streamer(StreamListener):
 		print "update"
 		#api.update_status('Airbot says hi! It\'s %s' % (time.strftime("%H:%M:%S")))
 	'''
-	
+	def get_latlon(self, city):
+		geolocator = Nominatim()
+		location = geolocator.geocode(city)
+		latitude, longitude = location.latitude, location.longitude
+		return latitude, longitude
+
+	def get_aqi(self, latitude, longitude):
+		parser = SafeConfigParser()
+		parser.read(CONFIG_FILE)
+		akey = parser.get('breezometer', 'akey')
+		print akey
+		context = ssl._create_unverified_context()
+		optionsUrl = 'http://api.breezometer.com/baqi/?lat={latitude}&lon={longitude}&key='+akey
+		optionsPage = urlopen(optionsUrl, context=context).read()
+		print optionsPage
+
 if __name__ == "__main__":
 	auth()
 
