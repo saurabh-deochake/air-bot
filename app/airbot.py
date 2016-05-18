@@ -30,7 +30,7 @@ import __future__
 import logging
 import ssl
 import tweepy
-import utm
+import json
 from bs4 import BeautifulSoup
 from urllib import urlopen
 from ConfigParser import SafeConfigParser
@@ -41,27 +41,28 @@ from tweepy.streaming import StreamListener
 
 CONFIG_FILE = "/etc/airbot.conf"
 
+parser = SafeConfigParser()
+parser.read(CONFIG_FILE)
 
-def auth():
-	parser = SafeConfigParser()
-	parser.read(CONFIG_FILE)
+ckey = parser.get('twitter','ckey')
+csecret = parser.get('twitter','csecret')
+atoken = parser.get('twitter','atoken')
+asecret = parser.get('twitter', 'asecret')
+akey = parser.get('breezometer', 'akey')
 
-	ckey = parser.get('twitter','ckey')
-	csecret = parser.get('twitter','csecret')
-	atoken = parser.get('twitter','atoken')
-	asecret = parser.get('twitter', 'asecret')
-	akey = parser.get('breezometer', 'akey')
-
-	# Create authentication token using our details
-	auth = tweepy.OAuthHandler(ckey, csecret)
-	auth.set_access_token(atoken, asecret)
-	api = tweepy.API(auth)
-	twitterStream = Stream(auth, streamer())	
-	twitterStream.filter(track=["#airqualityin"]) 
-
+# Create authentication token using our details
+auth = tweepy.OAuthHandler(ckey, csecret)
+auth.set_access_token(atoken, asecret)
+api = tweepy.API(auth)
 
 
 class streamer(StreamListener):
+	def start_stream(self):
+		
+		twitterStream = Stream(auth, streamer())	
+		twitterStream.filter(track=["#airqualityin"]) 
+
+
 	def on_data(self, data):
 		try:
 			userName = data.split(',"screen_name":"')[1].split('","location')[0]
@@ -72,7 +73,8 @@ class streamer(StreamListener):
 			latitude, longitude = self.get_latlon(city)
 			print latitude
 			print longitude
-			self.get_aqi(latitude, longitude)
+			aqi, quality = self.get_aqi(latitude, longitude)
+			self.on_update(userName, city, aqi, quality)
 			# 1) get lattitude and longitude from the city
 			# 2) pass the lattitude and longitude to get_aqi
 
@@ -91,11 +93,12 @@ class streamer(StreamListener):
 	def on_error(self, status):
 		print status
 
-	'''
-	def update(self, api):
+	
+	def on_update(self, userName, city, aqi, quality):
 		print "update"
-		#api.update_status('Airbot says hi! It\'s %s' % (time.strftime("%H:%M:%S")))
-	'''
+		print '@'+userName+' ,Current Air Quality in '+city+' is '+str(aqi)+ ' !'
+		api.update_status('@'+userName+', Air Quality in '+city+' is '+ quality.split()[0].lower()+ ' with index '+str(aqi)+ '. (via @BreezoMeter)')
+	
 	def get_latlon(self, city):
 		geolocator = Nominatim()
 		location = geolocator.geocode(city)
@@ -106,13 +109,23 @@ class streamer(StreamListener):
 		parser = SafeConfigParser()
 		parser.read(CONFIG_FILE)
 		akey = parser.get('breezometer', 'akey')
-		print akey
 		context = ssl._create_unverified_context()
-		optionsUrl = 'http://api.breezometer.com/baqi/?lat={latitude}&lon={longitude}&key='+akey
+
+		optionsUrl = 'http://api.breezometer.com/baqi/?lat='+str(latitude)+'&lon='+str(longitude)+'&key='+akey
+
+		print optionsUrl
+
+		#+akey
 		optionsPage = urlopen(optionsUrl, context=context).read()
-		print optionsPage
+		aqi_json = json.loads(optionsPage)
+		#if aqi_json['error']:
+			#print "Data not available!"
+		#else:
+
+		return aqi_json['breezometer_aqi'], aqi_json['breezometer_description']
 
 if __name__ == "__main__":
-	auth()
+	stream = streamer()
+	stream.start_stream()
 
 
