@@ -106,6 +106,8 @@ class streamer(StreamListener):
 			api.update_status(UNSUPPORTED_ERROR % (userName))
 		elif aqi == -1 and quality == NODATAAVAILABLE_ERROR:
 			api.update_status(NODATAAVAILABLE_ERROR % (userName))
+		elif aqi == -1 and quality == ERROR_TWEET:
+			api.update_status(ERROR_TWEET % (userName))
 		else:
 
 			print '@'+userName+' ,Current Air Quality in '+city+' is '+str(aqi)+ ' !'
@@ -158,7 +160,7 @@ class streamer(StreamListener):
 			else:
 				return aqi_json['breezometer_aqi'], aqi_json['breezometer_description']
 		except BaseException, e:
-			print str(e)
+			return -1, ERROR_TWEET
 
 if __name__ == "__main__":
 	stream = streamer()
