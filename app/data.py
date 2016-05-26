@@ -1,6 +1,6 @@
 #!/bin/python
 
-from PIL import Image 
+from PIL import Image, ImageDraw, ImageFont
 """
 The MIT License (MIT)
 
@@ -29,4 +29,12 @@ SOFTWARE.
 
 image = Image.open('1.png')
 image.load()
+
+
+draw = ImageDraw.Draw(image)
+draw.rectangle([130, 130, 190, 190 ],  fill="green", outline = "black")
+
+font = ImageFont.truetype("sans-serif.ttf", 16)
+# draw.text((x, y),"Sample Text",(r,g,b))
+draw.text((0, 0),"Sample Text",(255,255,255),font=font)
 image.show()
