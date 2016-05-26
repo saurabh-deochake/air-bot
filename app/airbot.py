@@ -41,8 +41,9 @@ from tweepy.streaming import StreamListener
 
 CONFIG_FILE = "/etc/airbot.conf"
 ERROR_TWEET = "@%s, to get air quality in your city, please tweet \"#airqualityin followed by city name (US only).\""
-UNSUPPORTED_ERROR = "@%s, Provided location is not yet supported! Please enter US city name!"
-NODATAAVAILABLE_ERROR = "@%s, Air quality data is not available currently. Please check back in some time!"
+UNSUPPORTED_ERROR = "@%s, Provided location is not yet supported at %s! Please enter US city name!"
+NODATAAVAILABLE_ERROR = "@%s, Air quality data is not available at %s. Please check back in some time!"
+TIME = str(time.strftime("%H:%M:%S"))
 
 parser = SafeConfigParser()
 parser.read(CONFIG_FILE)
@@ -103,15 +104,15 @@ class streamer(StreamListener):
 		print "update"
 
 		if aqi == -1 and quality == UNSUPPORTED_ERROR:
-			api.update_status(UNSUPPORTED_ERROR % (userName))
+			api.update_status(UNSUPPORTED_ERROR % (userName, TIME))
 		elif aqi == -1 and quality == NODATAAVAILABLE_ERROR:
-			api.update_status(NODATAAVAILABLE_ERROR % (userName))
+			api.update_status(NODATAAVAILABLE_ERROR % (userName, TIME))
 		elif aqi == -1 and quality == ERROR_TWEET:
 			api.update_status(ERROR_TWEET % (userName))
 		else:
 
 			print '@'+userName+' ,Current Air Quality in '+city+' is '+str(aqi)+ ' !'
-			api.update_status('@'+userName+', Air Quality in '+city+' is '+ quality.split()[0].lower()+ ' with index '+str(aqi)+ '. (via @BreezoMeter)')
+			api.update_status('@'+userName+', Air Quality in '+city+' at '+str(time.strftime("%H:%M:%S"))+' is '+ quality.split()[0].lower()+ ' with index '+str(aqi)+ '. (via @BreezoMeter)')
 
 	def on_limit(self, track):
 		print track
@@ -157,13 +158,13 @@ class streamer(StreamListener):
 				return -1, UNSUPPORTED_ERROR
 			elif aqi_json['error']['code'] == 21:
 				return -1, NODATAAVAILABLE_ERROR
-			else:
-				return aqi_json['breezometer_aqi'], aqi_json['breezometer_description']
+
+			print aqi_json['breezometer_aqi'], aqi_json['breezometer_description']
+			return aqi_json['breezometer_aqi'], aqi_json['breezometer_description']
 		except BaseException, e:
-			return -1, ERROR_TWEET
+				return -1, ERROR_TWEET
 
 if __name__ == "__main__":
 	stream = streamer()
 	stream.start_stream()
-
 
