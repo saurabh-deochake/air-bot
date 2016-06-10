@@ -30,11 +30,16 @@ SOFTWARE.
 image = Image.open('1.png')
 image.load()
 
+fill = "red"
+quality = "Hazardous"
+description = "The air quality index in New Brunswick is Hazardous. Please stay inside the houses!"
 
 draw = ImageDraw.Draw(image)
-draw.rectangle([130, 130, 190, 190 ],  fill="green", outline = "black")
+draw.rectangle([130, 130, 190, 190 ],  fill=fill, outline = "black")
 
-font = ImageFont.truetype("sans-serif.ttf", 16)
-# draw.text((x, y),"Sample Text",(r,g,b))
-draw.text((0, 0),"Sample Text",(255,255,255),font=font)
+font = ImageFont.truetype("arial.ttf", 16)
+
+#draw.text((x, y),"Sample Text",(r,g,b))
+draw.text((120, 210),quality,(0,0,0),font=font)
+draw.text((100, 250), description, (0,0,0), font=font)
 image.show()
