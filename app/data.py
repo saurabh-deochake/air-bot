@@ -1,6 +1,8 @@
 #!/bin/python
 
 from PIL import Image, ImageDraw, ImageFont
+import textwrap
+
 """
 The MIT License (MIT)
 
@@ -31,15 +33,24 @@ image = Image.open('1.png')
 image.load()
 
 fill = "red"
+index = "Index: 123.3"
 quality = "Hazardous"
-description = "The air quality index in New Brunswick is Hazardous. Please stay inside the houses!"
+text = "The air quality index in New Brunswick is Hazardous. Please stay inside the houses!"
 
 draw = ImageDraw.Draw(image)
 draw.rectangle([130, 130, 190, 190 ],  fill=fill, outline = "black")
 
 font = ImageFont.truetype("arial.ttf", 16)
+# boldFont = ImageFont.truetype("arial.ttf", 16)
 
 #draw.text((x, y),"Sample Text",(r,g,b))
 draw.text((120, 210),quality,(0,0,0),font=font)
-draw.text((100, 250), description, (0,0,0), font=font)
+draw.text((120, 232), index, fill=fill, font=font )
+#draw.text((100, 250), description, (0,0,0), font=font)
+
+offset = 250
+for line in textwrap.wrap(text, width=40):
+    draw.text( (30, offset + 10), line, (0,0,0), font=font)
+    offset += font.getsize(line)[1]
+
 image.show()
